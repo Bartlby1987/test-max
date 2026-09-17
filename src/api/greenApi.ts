@@ -14,8 +14,8 @@ function buildUrl(
   const base = credentials.apiUrl.replace(/\/$/, '')
   const path = `/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
 
-  // In development, route default GREEN-API host through Vite proxy to avoid CORS
-  if (import.meta.env.DEV && /api\.green-api\.com/i.test(base)) {
+  // Proxy default GREEN-API host via same-origin /green-api (Vite in dev, Vercel rewrites in prod)
+  if (/api\.green-api\.com/i.test(base)) {
     return `/green-api${path}`
   }
 
