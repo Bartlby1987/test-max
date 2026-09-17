@@ -4,7 +4,6 @@ import type {
   ReceiveNotificationResponse,
   SendMessageResponse,
 } from '../types'
-import { getGreenApiHostname } from '../utils/greenHost'
 
 function buildUrl(
   credentials: Credentials,
@@ -13,15 +12,7 @@ function buildUrl(
   query = '',
 ): string {
   const base = credentials.apiUrl.replace(/\/$/, '')
-  const path = `/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
-
-  // Same-origin proxy → correct instance host (e.g. 3100.api.green-api.com)
-  const host = getGreenApiHostname(base)
-  if (host) {
-    return `/api/ga/${host}${path}`
-  }
-
-  return `${base}${path}`
+  return `${base}/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
 }
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -37,6 +28,11 @@ async function parseJson<T>(response: Response): Promise<T> {
   }
 }
 
+async function readError(response: Response, fallback: string): Promise<string> {
+  const errorBody = await response.text()
+  return errorBody || `${fallback} (${response.status})`
+}
+
 export async function sendMessage(
   credentials: Credentials,
   chatId: string,
@@ -49,8 +45,7 @@ export async function sendMessage(
   })
 
   if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(errorBody || `Ошибка отправки (${response.status})`)
+    throw new Error(await readError(response, 'Ошибка отправки'))
   }
 
   return parseJson<SendMessageResponse>(response)
@@ -67,11 +62,27 @@ export async function checkAccount(
   })
 
   if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(errorBody || `Ошибка проверки номера (${response.status})`)
+    throw new Error(await readError(response, 'Ошибка проверки номера'))
   }
 
   return parseJson<CheckAccountResponse>(response)
+}
+
+/** Enable HTTP API receiving: empty webhookUrl + incoming messages. */
+export async function enableIncomingHttpApi(credentials: Credentials): Promise<void> {
+  const response = await fetch(buildUrl(credentials, 'setSettings'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      webhookUrl: '',
+      webhookUrlToken: '',
+      incomingWebhook: 'yes',
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'Не удалось включить входящие уведомления'))
+  }
 }
 
 export async function receiveNotification(
@@ -85,8 +96,7 @@ export async function receiveNotification(
   )
 
   if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(errorBody || `Ошибка получения уведомлений (${response.status})`)
+    throw new Error(await readError(response, 'Ошибка получения уведомлений'))
   }
 
   const text = await response.text()
@@ -107,7 +117,6 @@ export async function deleteNotification(
   )
 
   if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(errorBody || `Ошибка удаления уведомления (${response.status})`)
+    throw new Error(await readError(response, 'Ошибка удаления уведомления'))
   }
 }

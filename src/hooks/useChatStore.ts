@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   checkAccount,
   deleteNotification,
+  enableIncomingHttpApi,
   receiveNotification,
   sendMessage,
 } from '../api/greenApi'
@@ -120,13 +121,35 @@ export function useChatStore(credentials: Credentials) {
     const controller = new AbortController()
     let cancelled = false
 
+    const isAbort = (error: unknown) =>
+      (error instanceof DOMException && error.name === 'AbortError') ||
+      (error instanceof Error && error.name === 'AbortError')
+
     const poll = async () => {
       setIsReceiving(true)
+
+      try {
+        const settingsKey = `max-incoming-enabled:${credentials.idInstance}`
+        if (!sessionStorage.getItem(settingsKey)) {
+          await enableIncomingHttpApi(credentials)
+          sessionStorage.setItem(settingsKey, '1')
+        }
+      } catch (error) {
+        if (!cancelled && !isAbort(error)) {
+          setReceiveError(
+            humanizeApiError(
+              error,
+              'Не удалось включить входящие уведомления. Включите их вручную в кабинете GREEN-API',
+            ),
+          )
+        }
+      }
+
       while (!cancelled) {
         try {
           const notification = await receiveNotification(
             credentials,
-            5,
+            20,
             controller.signal,
           )
 
@@ -169,7 +192,7 @@ export function useChatStore(credentials: Credentials) {
           await deleteNotification(credentials, receiptId)
           setReceiveError(null)
         } catch (error) {
-          if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) {
+          if (cancelled || isAbort(error)) {
             break
           }
           setReceiveError(humanizeApiError(error, 'Ошибка получения'))

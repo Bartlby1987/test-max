@@ -30,13 +30,14 @@ export function ChatApp({ credentials, onLogout }: ChatAppProps) {
   const showChatOnMobile = Boolean(activeChatId)
 
   useEffect(() => {
-    if (receiveError && receiveError !== lastReceiveError.current) {
-      toast.error('Проблема с получением сообщений', receiveError)
-      lastReceiveError.current = receiveError
-    }
     if (!receiveError) {
       lastReceiveError.current = null
+      return
     }
+    // Avoid toast spam for the same repeating poll error
+    if (receiveError === lastReceiveError.current) return
+    lastReceiveError.current = receiveError
+    toast.error('Проблема с получением сообщений', receiveError)
   }, [receiveError, toast])
 
   return (
