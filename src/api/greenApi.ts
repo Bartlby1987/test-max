@@ -4,6 +4,7 @@ import type {
   ReceiveNotificationResponse,
   SendMessageResponse,
 } from '../types'
+import { DEFAULT_API_URL, normalizeApiUrl } from '../utils/validation'
 
 function buildUrl(
   credentials: Credentials,
@@ -11,8 +12,21 @@ function buildUrl(
   extraPath = '',
   query = '',
 ): string {
-  const base = credentials.apiUrl.replace(/\/$/, '')
-  return `${base}/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
+  const base = normalizeApiUrl(credentials.apiUrl)
+  if (!base) {
+    throw new Error(
+      `Некорректный apiUrl. Укажите адрес из кабинета, например https://3100.api.green-api.com (сейчас: "${credentials.apiUrl || DEFAULT_API_URL}")`,
+    )
+  }
+
+  const url = `${base}/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
+
+  // Guard against accidental relative requests to the Vercel host
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error('Внутренняя ошибка: сформирован относительный URL API')
+  }
+
+  return url
 }
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -28,9 +42,20 @@ async function parseJson<T>(response: Response): Promise<T> {
   }
 }
 
+function cleanupErrorText(errorBody: string, fallback: string, status: number): string {
+  const compact = errorBody.replace(/\s+/g, ' ').trim()
+  if (/NOT_FOUND/i.test(compact) || /page could not be found/i.test(compact)) {
+    return `${fallback}: неверный apiUrl (нужен адрес вида https://3100.api.green-api.com из кабинета GREEN-API)`
+  }
+  if (compact.length > 220) {
+    return `${fallback} (${status})`
+  }
+  return compact || `${fallback} (${status})`
+}
+
 async function readError(response: Response, fallback: string): Promise<string> {
   const errorBody = await response.text()
-  return errorBody || `${fallback} (${response.status})`
+  return cleanupErrorText(errorBody, fallback, response.status)
 }
 
 export async function sendMessage(

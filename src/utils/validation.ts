@@ -1,5 +1,22 @@
 const DEFAULT_API_URL = 'https://api.green-api.com'
 
+/** Returns absolute GREEN-API base URL or null if invalid. */
+export function normalizeApiUrl(value: string | undefined | null): string | null {
+  const trimmed = (value || '').trim().replace(/\/$/, '')
+  if (!trimmed) return null
+
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+    if (!/(^|\.)api\.green-api\.com$/i.test(url.hostname)) {
+      return null
+    }
+    return `${url.protocol}//${url.host}`
+  } catch {
+    return null
+  }
+}
+
 export function validateIdInstance(value: string): string | null {
   const trimmed = value.trim()
   if (!trimmed) return 'Укажите idInstance'
@@ -22,16 +39,13 @@ export function validateApiToken(value: string): string | null {
 }
 
 export function validateApiUrl(value: string): string | null {
-  const trimmed = (value.trim() || DEFAULT_API_URL).replace(/\/$/, '')
-  try {
-    const url = new URL(trimmed)
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-      return 'apiUrl должен начинаться с https://'
-    }
-    return null
-  } catch {
-    return 'Некорректный apiUrl'
+  if (!value.trim()) {
+    return 'Укажите apiUrl из кабинета (например https://3100.api.green-api.com)'
   }
+  if (!normalizeApiUrl(value)) {
+    return 'apiUrl должен быть вида https://XXXX.api.green-api.com'
+  }
+  return null
 }
 
 export function validateMessage(text: string): string | null {
@@ -50,8 +64,11 @@ export function humanizeApiError(error: unknown, fallback = 'Что-то пош�
 
   const lower = raw.toLowerCase()
 
+  if (lower.includes('not_found') || lower.includes('page could not be found') || lower.includes('arn1::')) {
+    return 'Неверный apiUrl. Укажите точный адрес из кабинета, например https://3100.api.green-api.com'
+  }
   if (lower.includes('failed to fetch') || lower.includes('networkerror')) {
-    return 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз'
+    return 'Нет связи с сервером. Проверьте интернет и apiUrl'
   }
   if (lower.includes('unauthorized') || lower.includes('401')) {
     return 'Неверный idInstance или apiTokenInstance'

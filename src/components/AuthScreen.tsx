@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import type { Credentials } from '../types'
 import { MaxLogo } from './MaxLogo'
 import {
-  DEFAULT_API_URL,
+  normalizeApiUrl,
   validateApiToken,
   validateApiUrl,
   validateIdInstance,
@@ -19,7 +19,7 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
   const toast = useToast()
   const [idInstance, setIdInstance] = useState('')
   const [apiTokenInstance, setApiTokenInstance] = useState('')
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL)
+  const [apiUrl, setApiUrl] = useState('https://3100.api.green-api.com')
   const [showToken, setShowToken] = useState(false)
   const [touched, setTouched] = useState({
     id: false,
@@ -35,7 +35,8 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
     event.preventDefault()
     setTouched({ id: true, token: true, url: true })
 
-    if (idError || tokenError || urlError) {
+    const normalizedUrl = normalizeApiUrl(apiUrl)
+    if (idError || tokenError || urlError || !normalizedUrl) {
       toast.error(
         'Проверьте данные входа',
         idError || tokenError || urlError || 'Заполните обязательные поля',
@@ -46,7 +47,7 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
     onSubmit({
       idInstance: idInstance.trim(),
       apiTokenInstance: apiTokenInstance.trim(),
-      apiUrl: (apiUrl.trim() || DEFAULT_API_URL).replace(/\/$/, ''),
+      apiUrl: normalizedUrl,
     })
     toast.success('Вход выполнен', 'Подключаемся к GREEN-API')
   }
