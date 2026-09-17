@@ -126,7 +126,7 @@ export function useChatStore(credentials: Credentials) {
         try {
           const notification = await receiveNotification(
             credentials,
-            20,
+            5,
             controller.signal,
           )
 
