@@ -4,6 +4,7 @@ import type {
   ReceiveNotificationResponse,
   SendMessageResponse,
 } from '../types'
+import { getGreenApiHostname } from '../utils/greenHost'
 
 function buildUrl(
   credentials: Credentials,
@@ -14,9 +15,10 @@ function buildUrl(
   const base = credentials.apiUrl.replace(/\/$/, '')
   const path = `/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}${extraPath}${query}`
 
-  // Proxy default GREEN-API host via same-origin /green-api (Vite in dev, Vercel rewrites in prod)
-  if (/api\.green-api\.com/i.test(base)) {
-    return `/green-api${path}`
+  // Same-origin proxy → correct instance host (e.g. 3100.api.green-api.com)
+  const host = getGreenApiHostname(base)
+  if (host) {
+    return `/api/ga/${host}${path}`
   }
 
   return `${base}${path}`

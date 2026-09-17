@@ -20,7 +20,6 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
   const [idInstance, setIdInstance] = useState('')
   const [apiTokenInstance, setApiTokenInstance] = useState('')
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL)
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [showToken, setShowToken] = useState(false)
   const [touched, setTouched] = useState({
     id: false,
@@ -81,7 +80,7 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
               value={idInstance}
               onChange={(e) => setIdInstance(e.target.value.replace(/\D/g, ''))}
               onBlur={() => setTouched((t) => ({ ...t, id: true }))}
-              placeholder="Например, 1101000000"
+              placeholder="Например, 310022739191"
               autoComplete="username"
               inputMode="numeric"
               aria-invalid={touched.id && Boolean(idError)}
@@ -114,33 +113,22 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
             )}
           </label>
 
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => setShowAdvanced((v) => !v)}
-          >
-            {showAdvanced ? 'Скрыть apiUrl' : 'Дополнительно: apiUrl'}
-          </button>
-
-          {showAdvanced && (
-            <motion.label
-              className={`field ${touched.url && urlError ? 'is-invalid' : ''}`}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-            >
-              <span>apiUrl</span>
-              <input
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, url: true }))}
-                placeholder={DEFAULT_API_URL}
-                aria-invalid={touched.url && Boolean(urlError)}
-              />
-              {touched.url && urlError && (
-                <span className="field-hint field-hint--error">{urlError}</span>
-              )}
-            </motion.label>
-          )}
+          <label className={`field ${touched.url && urlError ? 'is-invalid' : ''}`}>
+            <span>apiUrl</span>
+            <input
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, url: true }))}
+              placeholder="https://3100.api.green-api.com"
+              aria-invalid={touched.url && Boolean(urlError)}
+            />
+            <span className="field-hint">
+              Точный адрес из консоли GREEN-API (у вас: https://3100.api.green-api.com)
+            </span>
+            {touched.url && urlError && (
+              <span className="field-hint field-hint--error">{urlError}</span>
+            )}
+          </label>
 
           <motion.button
             className="primary-btn auth-submit"
