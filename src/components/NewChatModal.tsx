@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { formatPhoneDisplay } from '../api/greenApi'
+import { PhoneInput } from './PhoneInput'
+import { getCountryMeta, type PhoneCountry } from '../utils/phone'
+import { humanizeApiError } from '../utils/validation'
+import { useToast } from '../hooks/useToast'
 
 interface NewChatModalProps {
   open: boolean
@@ -10,27 +13,55 @@ interface NewChatModalProps {
 }
 
 export function NewChatModal({ open, onClose, onCreate }: NewChatModalProps) {
-  const [phone, setPhone] = useState('')
+  const toast = useToast()
+  const [country, setCountry] = useState<PhoneCountry>('ru')
+  const [national, setNational] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [touched, setTouched] = useState(false)
+
+  const e164 = useMemo(
+    () => `${getCountryMeta(country).code}${national}`,
+    [country, national],
+  )
+
+  const meta = getCountryMeta(country)
+  const canSubmit = national.length === meta.nationalLength && !loading
 
   useEffect(() => {
     if (!open) {
-      setPhone('')
+      setCountry('ru')
+      setNational('')
       setError(null)
       setLoading(false)
+      setTouched(false)
     }
   }, [open])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    setTouched(true)
+
+    if (national.length !== meta.nationalLength) {
+      const message =
+        country === 'by'
+          ? 'Введите полный номер Беларуси: 9 цифр после +375'
+          : 'Введите полный номер России: 10 цифр после +7'
+      setError(message)
+      toast.warning('Проверьте номер', message)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
-      await onCreate(phone)
+      await onCreate(e164)
+      toast.success('Чат создан', 'Можно писать сообщение')
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось создать чат')
+      const message = humanizeApiError(err, 'Не удалось создать чат')
+      setError(message)
+      toast.error('Не удалось создать чат', message)
     } finally {
       setLoading(false)
     }
@@ -59,33 +90,39 @@ export function NewChatModal({ open, onClose, onCreate }: NewChatModalProps) {
           >
             <h2 id="new-chat-title">Новый чат</h2>
             <p className="modal-subtitle">
-              Введите номер телефона получателя в международном формате (РФ или РБ)
+              Укажите номер получателя в MAX. Можно вставить номер целиком из буфера.
             </p>
 
-            <form onSubmit={handleSubmit}>
-              <label className="field">
+            <form onSubmit={handleSubmit} noValidate>
+              <label className="field" htmlFor="new-chat-phone">
                 <span>Номер телефона</span>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="79991234567"
-                  inputMode="tel"
-                  autoFocus
-                />
               </label>
 
-              {phone && (
-                <p className="modal-preview">{formatPhoneDisplay(phone)}</p>
-              )}
+              <PhoneInput
+                id="new-chat-phone"
+                country={country}
+                national={national}
+                onCountryChange={(next) => {
+                  setCountry(next)
+                  setError(null)
+                }}
+                onNationalChange={(next) => {
+                  setNational(next)
+                  setError(null)
+                  setTouched(true)
+                }}
+                disabled={loading}
+                autoFocus
+              />
 
-              {error && <p className="form-error">{error}</p>}
+              {touched && error && <p className="form-error">{error}</p>}
 
               <div className="modal-actions">
-                <button type="button" className="ghost-btn" onClick={onClose}>
+                <button type="button" className="ghost-btn" onClick={onClose} disabled={loading}>
                   Отмена
                 </button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Создание…' : 'Создать чат'}
+                <button type="submit" className="primary-btn" disabled={!canSubmit}>
+                  {loading ? 'Проверяем номер…' : 'Создать чат'}
                 </button>
               </div>
             </form>

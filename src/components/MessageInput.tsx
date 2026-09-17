@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { motion } from 'framer-motion'
+import { humanizeApiError, validateMessage } from '../utils/validation'
+import { useToast } from '../hooks/useToast'
 
 interface MessageInputProps {
   disabled?: boolean
@@ -8,21 +10,29 @@ interface MessageInputProps {
 }
 
 export function MessageInput({ disabled, onSend }: MessageInputProps) {
+  const toast = useToast()
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const messageError = useMemo(() => validateMessage(text), [text])
+  const tooLong = text.trim().length > 4000
 
   const submit = async () => {
-    if (!text.trim() || sending || disabled) return
+    if (sending || disabled) return
+
+    const error = validateMessage(text)
+    if (error) {
+      toast.warning('Сообщение не отправлено', error)
+      return
+    }
+
     setSending(true)
-    setError(null)
     const value = text
     setText('')
     try {
       await onSend(value)
     } catch (err) {
       setText(value)
-      setError(err instanceof Error ? err.message : 'Не удалось отправить')
+      toast.error('Ошибка отправки', humanizeApiError(err, 'Не удалось отправить сообщение'))
     } finally {
       setSending(false)
     }
@@ -41,21 +51,27 @@ export function MessageInput({ disabled, onSend }: MessageInputProps) {
   }
 
   return (
-    <form className="composer" onSubmit={handleSubmit}>
-      {error && <p className="composer-error">{error}</p>}
+    <form className="composer" onSubmit={handleSubmit} noValidate>
       <div className="composer-row">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Напишите сообщение…"
-          rows={1}
-          disabled={disabled || sending}
-        />
+        <div className="composer-field">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Напишите сообщение…"
+            rows={1}
+            disabled={disabled || sending}
+            aria-invalid={tooLong}
+            maxLength={4200}
+          />
+          <span className={`composer-counter ${tooLong ? 'is-over' : ''}`}>
+            {text.trim().length}/4000
+          </span>
+        </div>
         <motion.button
           type="submit"
           className="send-btn"
-          disabled={disabled || sending || !text.trim()}
+          disabled={disabled || sending || Boolean(messageError)}
           whileTap={{ scale: 0.92 }}
           aria-label="Отправить"
         >

@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   checkAccount,
   deleteNotification,
-  formatPhoneDisplay,
-  normalizePhone,
   receiveNotification,
   sendMessage,
-  toChatIdFromPhone,
 } from '../api/greenApi'
+import {
+  formatPhoneDisplay,
+  normalizePhone,
+  toChatIdFromPhone,
+  validatePhone,
+} from '../utils/phone'
+import { humanizeApiError } from '../utils/validation'
 import type { Chat, ChatMessage, Credentials } from '../types'
 
 const STORAGE_KEY = 'max-chat-state-v1'
@@ -168,7 +172,7 @@ export function useChatStore(credentials: Credentials) {
           if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) {
             break
           }
-          setReceiveError(error instanceof Error ? error.message : 'Ошибка получения')
+          setReceiveError(humanizeApiError(error, 'Ошибка получения'))
           await new Promise((resolve) => setTimeout(resolve, 3000))
         }
       }
@@ -185,8 +189,9 @@ export function useChatStore(credentials: Credentials) {
 
   const createChat = useCallback(async (phoneInput: string) => {
     const phone = normalizePhone(phoneInput)
-    if (phone.length < 11 || phone.length > 12) {
-      throw new Error('Номер должен содержать 11 или 12 цифр (формат РФ/РБ)')
+    const phoneError = validatePhone(phone)
+    if (phoneError) {
+      throw new Error(phoneError)
     }
 
     const existing = chatsRef.current.find(
@@ -198,7 +203,7 @@ export function useChatStore(credentials: Credentials) {
     }
 
     let chatId = toChatIdFromPhone(phone)
-    let name = formatPhoneDisplay(phone)
+    const name = formatPhoneDisplay(phone)
 
     try {
       const result = await checkAccount(credentials, Number(phone))
@@ -212,11 +217,15 @@ export function useChatStore(credentials: Credentials) {
         chatId = result.chatId
       }
     } catch (error) {
-      // If checkAccount fails due to limits, still allow creating chat by phone@c.us
-      const message = error instanceof Error ? error.message : ''
-      if (message.includes('не найден') || message.includes('не готов')) {
-        throw error
+      const original = error instanceof Error ? error.message : ''
+      if (
+        original.includes('не найден') ||
+        original.includes('не готов') ||
+        original.includes('Аккаунт MAX')
+      ) {
+        throw new Error(humanizeApiError(error, original))
       }
+      // Soft-fail on transient checkAccount issues: still open chat by phone@c.us
     }
 
     const chat: Chat = {

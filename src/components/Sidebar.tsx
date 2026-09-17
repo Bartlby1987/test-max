@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import type { Chat } from '../types'
-import { formatPhoneDisplay } from '../api/greenApi'
+import { formatPhoneDisplay } from '../utils/phone'
 import { MaxLogo } from './MaxLogo'
 
 interface SidebarProps {

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import type { Credentials } from './types'
 import { AuthScreen } from './components/AuthScreen'
 import { ChatApp } from './components/ChatApp'
+import { ToastProvider } from './hooks/useToast'
 
 const CREDENTIALS_KEY = 'max-green-api-credentials'
 
@@ -29,28 +30,30 @@ export default function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {credentials ? (
-        <motion.div
-          key="chat"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ height: '100%' }}
-        >
-          <ChatApp credentials={credentials} onLogout={handleLogout} />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="auth"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ height: '100%' }}
-        >
-          <AuthScreen onSubmit={handleLogin} />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <ToastProvider>
+      <AnimatePresence mode="wait">
+        {credentials ? (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ height: '100%' }}
+          >
+            <ChatApp credentials={credentials} onLogout={handleLogout} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="auth"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ height: '100%' }}
+          >
+            <AuthScreen onSubmit={handleLogin} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </ToastProvider>
   )
 }

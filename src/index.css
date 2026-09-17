@@ -736,6 +736,249 @@ a {
   }
 }
 
+.field.is-invalid input,
+.phone-field.is-invalid .phone-input-wrap {
+  border-color: rgba(224, 79, 95, 0.55);
+  box-shadow: 0 0 0 4px rgba(224, 79, 95, 0.12);
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  line-height: 1.35;
+}
+
+.field-hint--error {
+  color: var(--danger);
+}
+
+.input-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-with-action input {
+  flex: 1;
+  min-width: 0;
+}
+
+.input-action {
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  border-radius: 14px;
+  padding: 0 14px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* ---------- Phone input ---------- */
+
+.phone-field {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.phone-countries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.phone-country {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.phone-country.is-active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: rgba(71, 26, 255, 0.28);
+}
+
+.phone-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  border-radius: 14px;
+  padding: 0 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.phone-field.is-valid .phone-input-wrap {
+  border-color: rgba(47, 158, 107, 0.55);
+  box-shadow: 0 0 0 4px rgba(47, 158, 107, 0.12);
+}
+
+.phone-input-wrap:focus-within {
+  border-color: rgba(71, 26, 255, 0.55);
+  background: #fff;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.phone-dial {
+  font-weight: 800;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.phone-input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 14px 0 !important;
+  outline: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.phone-status {
+  width: 18px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--success);
+}
+
+.phone-field.is-invalid .phone-status {
+  color: var(--danger);
+}
+
+.phone-preview {
+  margin: 0;
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+}
+
+/* ---------- Composer extras ---------- */
+
+.composer-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.composer-field textarea {
+  padding-right: 72px;
+}
+
+.composer-counter {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+.composer-counter.is-over {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ---------- Toasts ---------- */
+
+.toast-viewport {
+  position: fixed;
+  z-index: 80;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  left: auto;
+  width: min(380px, calc(100vw - 24px));
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 14px 14px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(12px);
+}
+
+.toast-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+}
+
+.toast--success .toast-icon {
+  background: var(--success);
+}
+
+.toast--error .toast-icon {
+  background: var(--danger);
+}
+
+.toast--warning .toast-icon {
+  background: #d97706;
+}
+
+.toast--info .toast-icon {
+  background: var(--accent);
+}
+
+.toast-body {
+  min-width: 0;
+}
+
+.toast-body strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.toast-body p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+@media (max-width: 480px) {
+  .toast-viewport {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

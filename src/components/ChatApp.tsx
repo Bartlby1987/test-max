@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Credentials } from '../types'
 import { useChatStore } from '../hooks/useChatStore'
+import { useToast } from '../hooks/useToast'
 import { Sidebar } from './Sidebar'
 import { ChatWindow } from './ChatWindow'
 import { NewChatModal } from './NewChatModal'
@@ -12,6 +13,7 @@ interface ChatAppProps {
 }
 
 export function ChatApp({ credentials, onLogout }: ChatAppProps) {
+  const toast = useToast()
   const {
     chats,
     activeChat,
@@ -24,7 +26,18 @@ export function ChatApp({ credentials, onLogout }: ChatAppProps) {
   } = useChatStore(credentials)
 
   const [modalOpen, setModalOpen] = useState(false)
+  const lastReceiveError = useRef<string | null>(null)
   const showChatOnMobile = Boolean(activeChatId)
+
+  useEffect(() => {
+    if (receiveError && receiveError !== lastReceiveError.current) {
+      toast.error('Проблема с получением сообщений', receiveError)
+      lastReceiveError.current = receiveError
+    }
+    if (!receiveError) {
+      lastReceiveError.current = null
+    }
+  }, [receiveError, toast])
 
   return (
     <motion.div

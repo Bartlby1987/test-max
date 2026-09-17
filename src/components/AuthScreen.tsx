@@ -1,26 +1,46 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import type { Credentials } from '../types'
 import { MaxLogo } from './MaxLogo'
+import {
+  DEFAULT_API_URL,
+  validateApiToken,
+  validateApiUrl,
+  validateIdInstance,
+} from '../utils/validation'
+import { useToast } from '../hooks/useToast'
 
 interface AuthScreenProps {
   onSubmit: (credentials: Credentials) => void
 }
 
-const DEFAULT_API_URL = 'https://api.green-api.com'
-
 export function AuthScreen({ onSubmit }: AuthScreenProps) {
+  const toast = useToast()
   const [idInstance, setIdInstance] = useState('')
   const [apiTokenInstance, setApiTokenInstance] = useState('')
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [showToken, setShowToken] = useState(false)
+  const [touched, setTouched] = useState({
+    id: false,
+    token: false,
+    url: false,
+  })
+
+  const idError = useMemo(() => validateIdInstance(idInstance), [idInstance])
+  const tokenError = useMemo(() => validateApiToken(apiTokenInstance), [apiTokenInstance])
+  const urlError = useMemo(() => validateApiUrl(apiUrl), [apiUrl])
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    if (!idInstance.trim() || !apiTokenInstance.trim()) {
-      setError('Заполните idInstance и apiTokenInstance из личного кабинета GREEN-API')
+    setTouched({ id: true, token: true, url: true })
+
+    if (idError || tokenError || urlError) {
+      toast.error(
+        'Проверьте данные входа',
+        idError || tokenError || urlError || 'Заполните обязательные поля',
+      )
       return
     }
 
@@ -29,6 +49,7 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
       apiTokenInstance: apiTokenInstance.trim(),
       apiUrl: (apiUrl.trim() || DEFAULT_API_URL).replace(/\/$/, ''),
     })
+    toast.success('Вход выполнен', 'Подключаемся к GREEN-API')
   }
 
   return (
@@ -53,27 +74,44 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
           <p>Чат через GREEN-API — отправка и получение текстовых сообщений</p>
         </motion.div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label className="field">
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <label className={`field ${touched.id && idError ? 'is-invalid' : ''}`}>
             <span>idInstance</span>
             <input
               value={idInstance}
-              onChange={(e) => setIdInstance(e.target.value)}
+              onChange={(e) => setIdInstance(e.target.value.replace(/\D/g, ''))}
+              onBlur={() => setTouched((t) => ({ ...t, id: true }))}
               placeholder="Например, 1101000000"
               autoComplete="username"
               inputMode="numeric"
+              aria-invalid={touched.id && Boolean(idError)}
             />
+            {touched.id && idError && <span className="field-hint field-hint--error">{idError}</span>}
           </label>
 
-          <label className="field">
+          <label className={`field ${touched.token && tokenError ? 'is-invalid' : ''}`}>
             <span>apiTokenInstance</span>
-            <input
-              value={apiTokenInstance}
-              onChange={(e) => setApiTokenInstance(e.target.value)}
-              placeholder="Токен из личного кабинета"
-              autoComplete="current-password"
-              type="password"
-            />
+            <div className="input-with-action">
+              <input
+                value={apiTokenInstance}
+                onChange={(e) => setApiTokenInstance(e.target.value.trim())}
+                onBlur={() => setTouched((t) => ({ ...t, token: true }))}
+                placeholder="Токен из личного кабинета"
+                autoComplete="current-password"
+                type={showToken ? 'text' : 'password'}
+                aria-invalid={touched.token && Boolean(tokenError)}
+              />
+              <button
+                type="button"
+                className="input-action"
+                onClick={() => setShowToken((v) => !v)}
+              >
+                {showToken ? 'Скрыть' : 'Показать'}
+              </button>
+            </div>
+            {touched.token && tokenError && (
+              <span className="field-hint field-hint--error">{tokenError}</span>
+            )}
           </label>
 
           <button
@@ -86,7 +124,7 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
 
           {showAdvanced && (
             <motion.label
-              className="field"
+              className={`field ${touched.url && urlError ? 'is-invalid' : ''}`}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
             >
@@ -94,12 +132,15 @@ export function AuthScreen({ onSubmit }: AuthScreenProps) {
               <input
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, url: true }))}
                 placeholder={DEFAULT_API_URL}
+                aria-invalid={touched.url && Boolean(urlError)}
               />
+              {touched.url && urlError && (
+                <span className="field-hint field-hint--error">{urlError}</span>
+              )}
             </motion.label>
           )}
-
-          {error && <p className="form-error">{error}</p>}
 
           <motion.button
             className="primary-btn auth-submit"

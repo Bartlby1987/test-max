@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Chat } from '../types'
-import { formatPhoneDisplay } from '../api/greenApi'
+import { formatPhoneDisplay } from '../utils/phone'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { MaxLogo } from './MaxLogo'
